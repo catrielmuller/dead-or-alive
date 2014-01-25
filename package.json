@@ -1,0 +1,8 @@
+{
+     "name": "dead-or-alive",
+     "description": "Global Game Jam 2014",
+     "version": "0.0.1",
+     "dependencies": {
+     	"express": "3.x"
+     }
+}
