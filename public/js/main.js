@@ -15,6 +15,8 @@ app.initsocket = function(){
             var code = timestamp.toString(36).toUpperCase();
             app.code = code;
 
+            console.log('Code: ' + app.code);
+
             app.socket.emit('addplayer', code);
 
         }
@@ -29,9 +31,20 @@ app.initsocket = function(){
         app.create_players(listplayers);
     });
 
+    app.socket.on('playernew', function(player){
+        app.new_player(player);
+    });
+
+
     app.socket.on('playerupdate', function(player){
         app.updateplayer(player);
     });
+
+    app.socket.on('playerdelete', function(playercode){
+        app.remove_player(playercode);
+    });
+
+
 
 
 }
@@ -50,14 +63,32 @@ app.create_players = function(listplayers){
 
     for(var i in listplayers){
 
-        if(listplayers[i].code != app.code){
-            app.players[listplayers[i].code] = listplayers[i];
-            app.players[listplayers[i].code].element = new THREE.Mesh(app.def_geometry, app.def_material);
-
-            app.scene.add(app.players[listplayers[i].code].element);    
-        }        
+        var player = listplayers[i];
+        app.new_player(player);
         
     };
+}
+
+app.remove_player = function(playercode){
+
+    if(app.players[playercode] != undefined){
+        app.scene.remove(app.players[playercode].element);    
+        delete app.players[playercode];
+
+    }
+
+}
+
+app.new_player = function(player){
+
+    console.log(player);
+
+    if(player.code != app.code){
+        app.players[player.code] = player;
+        app.players[player.code].element = new THREE.Mesh(app.def_geometry, app.def_material);
+
+        app.scene.add(app.players[player.code].element);    
+    }
 
 }
 
@@ -74,6 +105,8 @@ app.updateplayer = function(player){
             app.players[player.code].element.position.y = player.position.y;
             app.players[player.code].element.position.z = player.position.z;
 
+            //console.log('UP!')
+
         }
 
     }
@@ -89,7 +122,8 @@ app.init = function(){
     app.controls = new THREE.PointerLockControls( app.camera );
     app.scene.add( app.controls.getObject() );
 
-    app.renderer = new THREE.WebGLRenderer();
+    app.renderer = new THREE.WebGLRenderer({antialias:true});
+    app.renderer.setClearColorHex( 0xffffff, 1 );
     app.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(app.renderer.domElement);
 
@@ -134,7 +168,9 @@ app.init = function(){
     var geometry = new THREE.CubeGeometry(20,20,20);
     var material = new THREE.MeshBasicMaterial({color: 0x00ff00});
 
-    app.cubes = []
+    //app.cubes = []
+
+    /*
 
     for ( var i = 0; i < 10; i ++ ) {
         var cube = new THREE.Mesh(geometry, material);
@@ -146,10 +182,43 @@ app.init = function(){
         app.scene.add(cube);
     }
 
+    */
 
-    //app.camera.position.y = -10;
-    //app.camera.position.z = 5;
-    //app.camera.position.x = -10;
+    /*TEST */
+
+    app.scene.add( new THREE.AmbientLight( 0x111111 ) );
+
+    app.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8 );
+
+    app.directionalLight.position.x = 0;
+    app.directionalLight.position.y = 25;
+    app.directionalLight.position.z = 25;
+
+    app.directionalLight.position.normalize();
+
+    app.scene.add( app.directionalLight );
+
+
+    var loader = new THREE.JSONLoader();
+    loader.load( '/models/pj.js', function ( geometry, materials ) {
+
+        var morph = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+        morph.position.set( 0, 0, 0 );
+        morph.scale.x = morph.scale.y = morph.scale.z = 2;
+
+        app.scene.add( morph );
+
+    });
+
+
+
+
+
+
+
+    app.camera.position.y = -10;
+    app.camera.position.z = 30;
+    app.camera.position.x = 0;
 
     app.render();
 
@@ -169,7 +238,7 @@ app.update = function(){
     app.controls.update( Date.now() - app.time);
     app.time = Date.now();
 
-    app.me.position = app.camera.position;
+    app.me.position = app.controls.getObject().position;
 
     app.pushmetoserver();
 

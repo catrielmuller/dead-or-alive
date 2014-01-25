@@ -17,8 +17,8 @@ server.listen(8000);
 
 var io = require('socket.io').listen(server);
 io.set('log level', 1);
-io.set('transports', ['xhr-polling']);
-io.set('polling duration', 10); 
+//io.set('transports', ['xhr-polling']);
+//io.set('polling duration', 10); 
 
 /* Init Master Vars */
 
@@ -46,6 +46,8 @@ io.sockets.on('connection', function (socket) {
         players_data[code] = {code: code};
 
         socket.emit('listplayers', players_data);
+
+        socket.broadcast.emit('playernew', players_data[code]);
         
         socket.emit('log', 'Server Connected');
 
@@ -68,12 +70,19 @@ io.sockets.on('connection', function (socket) {
     });
 
     socket.on('disconnect', function(){
-        // remove the username from global usernames list
-        // delete usernames[socket.username];
-        // // update list of users in chat, client-side
-        // io.sockets.emit('updateusers', usernames);
-        // // echo globally that this client has left
-        // socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+       
+        for(var i in players){
+            if (players[i].id == socket.id){
+
+                var code = players_data[i].code;
+                socket.broadcast.emit('playerdelete', code);
+                delete players[i];
+                delete players_data[i];                
+            }
+        }
+        
+        //console.log(socket);
+
         //socket.broadcast.emit('input', 'keypadon');
     });
 });

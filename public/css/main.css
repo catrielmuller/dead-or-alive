@@ -1,6 +1,10 @@
 body {
-	color: #fff;
-	background-color: #000;
+	color: #000;
+	background-color: #fff;
 	margin: 0px;
 	overflow: hidden;
+}
+
+canvas {
+	background: #ffffff;
 }
