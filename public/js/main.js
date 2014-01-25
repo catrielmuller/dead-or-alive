@@ -123,9 +123,15 @@ app.init = function(){
     app.scene.add( app.controls.getObject() );
 
     app.renderer = new THREE.WebGLRenderer({antialias:true});
+    app.renderer.autoClear = false;
     app.renderer.setClearColorHex( 0xffffff, 1 );
     app.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(app.renderer.domElement);
+
+    app.stats = new Stats();
+    app.stats.domElement.style.position = 'absolute';
+    app.stats.domElement.style.top = '0px';
+    document.body.appendChild( app.stats.domElement );
 
     app.time = Date.now();
 
@@ -201,24 +207,20 @@ app.init = function(){
     var loader = new THREE.JSONLoader();
     loader.load( '/models/pj.js', function ( geometry, materials ) {
 
-        //app.shader = ShaderExtras["hatching"];
-        app.shader = THREE.ShaderLib["lambert"];
-        var u = THREE.UniformsUtils.clone(app.shader.uniforms);
-        var vs = app.shader.vertex_shader;
-        var fs = app.shader.fragment_shader;
+        //app.shader = ShaderTest["hatching"];
+        //app.shader = THREE.ShaderLib["lambert"];
+        //app.shader_u = THREE.UniformsUtils.clone(app.shader.uniforms);
+        //app.shader_vs = app.shader.vertex_shader;
+        //app.shader_fs = app.shader.fragment_shader;
 
-        var smaterial = new THREE.ShaderMaterial({ uniforms: u, vertex_shader: vs,  fragment_shader: fs , });
+        //var smaterial = new THREE.ShaderMaterial({ uniforms: app.shader_u, vertexShader: app.shader_vs,  fragmentShader: app.shader_fs});
 
         //smaterial.uniforms.uDirLightPos.value = app.directionalLight.position;
         //smaterial.uniforms.uDirLightColor.value = app.directionalLight.color;
-        smaterial.wireframe = true;
+        
+        //var morph = new THREE.Mesh( geometry, smaterial );
 
-        console.log(smaterial);
-
-        morph = new THREE.Mesh( geometry, smaterial );
-
-
-        //var morph = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+        var morph = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
         morph.position.set( 0, 0, 0 );
         morph.scale.x = morph.scale.y = morph.scale.z = 2;
 
