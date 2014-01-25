@@ -1,43 +1,76 @@
 var app = {}
 
 app.init = function(){
-	
-    app.clock = new THREE.Clock();
+
+    app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 1000);
+
 	app.scene = new THREE.Scene();
+
+    app.controls = new THREE.PointerLockControls( app.camera );
+    app.scene.add( app.controls.getObject() );
 
     app.renderer = new THREE.WebGLRenderer();
     app.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(app.renderer.domElement);
 
-    app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    app.time = Date.now();
 
-    app.controls = new THREE.FirstPersonControls(app.camera);
-    app.controls.movementSpeed = 10;
-    app.controls.lookSpeed = 0.10;
-    app.controls.lookVertical = true;
+    var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
 
+    if ( havePointerLock ) {
 
-    app.requestPointerLock = app.controls.domElement.requestPointerLock ||
-                 app.controls.domElement.mozRequestPointerLock ||
-                 app.controls.domElement.webkitRequestPointerLock;
+        var element = document.body;
 
+        var pointerlockchange = function ( event ) {
+            if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
 
-    app.exitPointerLock = document.exitPointerLock ||
-                document.mozExitPointerLock ||
-                document.webkitExitPointerLock;
-
-    app.renderer.domElement.onclick = app.requestPointerLock;
+                app.controls.enabled = true;
 
 
+            } else {
 
-    app.cube = new Cube();
+                app.controls.enabled = false;
 
-    app.scene.add(app.cube.cube);
+            }
 
+        }
+
+        // Hook pointer lock state change events
+        document.addEventListener( 'pointerlockchange', pointerlockchange, false );
+        document.addEventListener( 'mozpointerlockchange', pointerlockchange, false );
+        document.addEventListener( 'webkitpointerlockchange', pointerlockchange, false );
+
+        app.renderer.domElement.addEventListener( 'click', function ( event ) {
+
+            // Ask the browser to lock the pointer
+            element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+
+            element.requestPointerLock();
+
+        }, false );
+
+    }
+
+    var geometry = new THREE.CubeGeometry(20,20,20);
+    var material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+
+    app.cubes = []
+
+    for ( var i = 0; i < 10; i ++ ) {
+        var cube = new THREE.Mesh(geometry, material);
+        cube.position.x = i*40;
+        cube.position.y = 0;
+        cube.position.z = 0;
+
+        app.cubes.push(cube);
+        app.scene.add(cube);
+    }
+
+//     app.camera.position.z = 5;
+
+    app.camera.position.y = -10;
     app.camera.position.z = 5;
 
-    app.render();
-    app.renderer.domElement.webkitRequestPointerLock()
 };
 
 app.animate = function(){
@@ -48,30 +81,15 @@ app.animate = function(){
 
 
 app.update = function(){
-    var delta = app.clock.getDelta();
-    app.controls.update(delta);
+    app.controls.isOnObject( true );
+    app.controls.update( Date.now() - app.time);
+    app.time = Date.now();
 
-    /*
-    if( app.keyboard.pressed("1") ){
-        app.cube.rotateLeft();
-    }
-    if( app.keyboard.pressed("2") ){
-        app.cube.rotateRight();
-    }
-    if( app.keyboard.pressed("3") ){
-        app.cube.rotateUp();
-    }
-    if( app.keyboard.pressed("4") ){
-        app.cube.rotateDown();
-    }
-    */
-    
 }
 
 app.render = function() {
     app.renderer.render(app.scene, app.camera);
 }
-
 
 
 window.onload = function(){
