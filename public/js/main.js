@@ -1,10 +1,15 @@
 var app = {}
 
+function get(name){
+   if(name=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search))
+      return decodeURIComponent(name[1]);
+}
+
 app.isconnect = false;
 
 app.initsocket = function(){
 
-    app.socket = io.connect('192.168.1.28');
+    app.socket = io.connect('localhost');
 
     app.socket.on('connect', function(){
 
@@ -13,11 +18,11 @@ app.initsocket = function(){
 
             var timestamp = Math.round(+new Date()/1000);
             var code = timestamp.toString(36).toUpperCase();
-            app.code = code;
+            app.me.code = code;
 
-            console.log('Code: ' + app.code);
+            console.log('Code: ' + app.me.code);
 
-            app.socket.emit('addplayer', code);
+            app.socket.emit('addplayer', app.me);
 
         }
 
@@ -50,11 +55,20 @@ app.initsocket = function(){
 }
 
 app.pushmetoserver = function(){
-    app.socket.emit('meupdate', app.code, app.me);
+    app.socket.emit('meupdate', app.me.code, app.me);
 }
 
 app.players = {};
 app.me = {};
+
+var model = get('model');
+
+if ( model !== undefined ){
+    app.me.model = model;
+}
+else{
+    app.me.model = 'pj';
+}
 
 app.def_geometry = new THREE.CubeGeometry(1,1,1);
 app.def_material = new THREE.MeshBasicMaterial({color: 0x00ff00});
@@ -65,14 +79,14 @@ app.create_players = function(listplayers){
 
         var player = listplayers[i];
         app.new_player(player);
-        
+
     };
 }
 
 app.remove_player = function(playercode){
 
     if(app.players[playercode] != undefined){
-        app.scene.remove(app.players[playercode].element);    
+        app.scene.remove(app.players[playercode].element);
         delete app.players[playercode];
 
     }
@@ -82,12 +96,49 @@ app.remove_player = function(playercode){
 app.new_player = function(player){
 
     console.log(player);
-
-    if(player.code != app.code){
+    function loadMesh( geometry, materials ){
         app.players[player.code] = player;
-        app.players[player.code].element = new THREE.Mesh(app.def_geometry, app.def_material);
+        var mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+/*
+        mesh.scale.x = mesh.scale.y = mesh.scale.z = 2;
+        mesh.position.x = -30;*/
+        app.scene.add( mesh );
 
-        app.scene.add(app.players[player.code].element);    
+        app.players[player.code].element = mesh;
+    }
+
+    if(player.code != app.me.code){
+        if ( ! (player.model in app.models) ){
+
+            var loader = new THREE.JSONLoader();
+            loader.load( '/models/'+player.model+'.js', function ( geometry, materials ) {
+
+                //app.shader = ShaderExtras["hatching"];
+        //         app.shader = THREE.ShaderLib["lambert"];
+        //         var u = THREE.UniformsUtils.clone(app.shader.uniforms);
+        //         var vs = app.shader.vertexShader;
+        //         var fs = app.shader.fragmentShader;
+        //
+        //         var smaterial = new THREE.ShaderMaterial({ uniforms: u, vertex_shader: vs,  fragment_shader: fs , });
+
+                //smaterial.uniforms.uDirLightPos.value = app.directionalLight.position;
+                //smaterial.uniforms.uDirLightColor.value = app.directionalLight.color;
+        //         smaterial.wireframe = true;
+
+        //         console.log(smaterial);
+
+        //         morph = new THREE.Mesh( geometry, smaterial );
+
+                app.models[player.model] = {'geometry': geometry, 'materials': materials};
+                var mesh = loadMesh( geometry, materials );
+
+            });
+        }
+        else{
+            var model = app.models[player.model];
+            loadMesh( model['geometry'], model['materials'] );
+        }
+
     }
 
 }
@@ -96,15 +147,19 @@ app.updateplayer = function(player){
 
     if(app.players[player.code] != undefined){
 
-        
+
         if(player.position != undefined){
 
             app.players[player.code].position = player.position;
+            app.players[player.code].rotation = player.rotation;
 
             app.players[player.code].element.position.x = player.position.x;
             app.players[player.code].element.position.y = player.position.y;
             app.players[player.code].element.position.z = player.position.z;
 
+            app.players[player.code].element.rotation.x = player.rotation.x;
+            app.players[player.code].element.rotation.y = player.rotation.y;
+            app.players[player.code].element.rotation.z = player.rotation.z;
             //console.log('UP!')
 
         }
@@ -115,7 +170,7 @@ app.updateplayer = function(player){
 
 app.init = function(){
 
-    app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 1000);
+    app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 
 	app.scene = new THREE.Scene();
 
@@ -170,9 +225,9 @@ app.init = function(){
         }, false );
 
     }
-
+/*
     var geometry = new THREE.CubeGeometry(20,20,20);
-    var material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+    var material = new THREE.MeshBasicMaterial({color: 0x00ff00});*/
 
     //app.cubes = []
 
@@ -203,7 +258,9 @@ app.init = function(){
     app.directionalLight.position.normalize();
 
     app.scene.add( app.directionalLight );
-    
+
+    app.models = {};
+/*
     var loader = new THREE.JSONLoader();
     loader.load( '/models/pj.js', function ( geometry, materials ) {
 
@@ -217,22 +274,49 @@ app.init = function(){
 
         //smaterial.uniforms.uDirLightPos.value = app.directionalLight.position;
         //smaterial.uniforms.uDirLightColor.value = app.directionalLight.color;
-        
+
         //var morph = new THREE.Mesh( geometry, smaterial );
 
         var morph = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
         morph.position.set( 0, 0, 0 );
         morph.scale.x = morph.scale.y = morph.scale.z = 2;
 
-        app.scene.add( morph );
+//         app.scene.add( morph );
 
-    });
-
+    });*/
+/*
     app.camera.position.y = -10;
     app.camera.position.z = 30;
-    app.camera.position.x = 0;
+    app.camera.position.x = 0;*/
+/*
+    app.render();*/
+// floor
 
-    app.render();
+    geometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
+    geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
+
+    for ( var i = 0, l = geometry.vertices.length; i < l; i ++ ) {
+
+        var vertex = geometry.vertices[ i ];
+        vertex.x += Math.random() * 20 - 10;
+        vertex.y += Math.random() * 2;
+        vertex.z += Math.random() * 20 - 10;
+
+    }
+
+    for ( var i = 0, l = geometry.faces.length; i < l; i ++ ) {
+
+        var face = geometry.faces[ i ];
+        face.vertexColors[ 0 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+        face.vertexColors[ 1 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+        face.vertexColors[ 2 ] = new THREE.Color().setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
+
+    }
+
+    material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
+
+    mesh = new THREE.Mesh( geometry, material );
+    app.scene.add( mesh );
 
     app.initsocket();
 
@@ -251,6 +335,9 @@ app.update = function(){
     app.time = Date.now();
 
     app.me.position = app.controls.getObject().position;
+    app.me.rotation = {'x': app.controls.getObject().rotation.x,
+                       'y': app.controls.getObject().rotation.y,
+                       'z': app.controls.getObject().rotation.z};
 
     app.pushmetoserver();
 

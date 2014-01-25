@@ -3,11 +3,11 @@
 var express = require('express');
 var http = require('http');
 
-/* Configure Express */ 
+/* Configure Express */
 
 var app = express();
 app.configure(function () {
-    
+
 });
 
 var server = http.createServer(app);
@@ -18,14 +18,14 @@ server.listen(8000);
 var io = require('socket.io').listen(server);
 io.set('log level', 1);
 //io.set('transports', ['xhr-polling']);
-//io.set('polling duration', 10); 
+//io.set('polling duration', 10);
 
 /* Init Master Vars */
 
-/* Static Assets */ 
+/* Static Assets */
 app.use(express.static(__dirname + '/public'));
 
-/* Main Index Static Direct Call */ 
+/* Main Index Static Direct Call */
 app.get('/', function (req, res) {
   res.send('Dead or Alive');
 });
@@ -39,16 +39,16 @@ var players_data = {};
 io.sockets.on('connection', function (socket) {
 
 
-    socket.on('addplayer', function(code){
-        socket.player = code;
+    socket.on('addplayer', function(player){
+        socket.player = player.code;
 
-        players[code] = socket;
-        players_data[code] = {code: code};
+        players[player.code] = socket;
+        players_data[player.code] = player;
 
         socket.emit('listplayers', players_data);
 
-        socket.broadcast.emit('playernew', players_data[code]);
-        
+        socket.broadcast.emit('playernew', player);
+
         socket.emit('log', 'Server Connected');
 
     });
@@ -59,28 +59,28 @@ io.sockets.on('connection', function (socket) {
 
             data.code = code;
             players_data[code] = data;
-            
+
             socket.broadcast.emit('playerupdate', players_data[code]);
             //socket.emit('log', 'Updated Player');
 
 
         }
 
-              
+
     });
 
     socket.on('disconnect', function(){
-       
+
         for(var i in players){
             if (players[i].id == socket.id){
 
                 var code = players_data[i].code;
                 socket.broadcast.emit('playerdelete', code);
                 delete players[i];
-                delete players_data[i];                
+                delete players_data[i];
             }
         }
-        
+
         //console.log(socket);
 
         //socket.broadcast.emit('input', 'keypadon');
