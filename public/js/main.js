@@ -197,24 +197,34 @@ app.init = function(){
     app.directionalLight.position.normalize();
 
     app.scene.add( app.directionalLight );
-
-
+    
     var loader = new THREE.JSONLoader();
     loader.load( '/models/pj.js', function ( geometry, materials ) {
 
-        var morph = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+        //app.shader = ShaderExtras["hatching"];
+        app.shader = THREE.ShaderLib["lambert"];
+        var u = THREE.UniformsUtils.clone(app.shader.uniforms);
+        var vs = app.shader.vertex_shader;
+        var fs = app.shader.fragment_shader;
+
+        var smaterial = new THREE.ShaderMaterial({ uniforms: u, vertex_shader: vs,  fragment_shader: fs , });
+
+        //smaterial.uniforms.uDirLightPos.value = app.directionalLight.position;
+        //smaterial.uniforms.uDirLightColor.value = app.directionalLight.color;
+        smaterial.wireframe = true;
+
+        console.log(smaterial);
+
+        morph = new THREE.Mesh( geometry, smaterial );
+
+
+        //var morph = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
         morph.position.set( 0, 0, 0 );
         morph.scale.x = morph.scale.y = morph.scale.z = 2;
 
         app.scene.add( morph );
 
     });
-
-
-
-
-
-
 
     app.camera.position.y = -10;
     app.camera.position.z = 30;
