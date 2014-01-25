@@ -1,39 +1,76 @@
 var app = {}
 
 app.init = function(){
-	
-	app.scene = new THREE.Scene();
 
-	app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    app.scene = new THREE.Scene();
+    app.renderer = new THREE.WebGLRenderer();
+    app.renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(app.renderer.domElement);
 
-	app.renderer = new THREE.WebGLRenderer();
-	app.renderer.setSize(window.innerWidth, window.innerHeight);
-	document.body.appendChild(app.renderer.domElement);
+    app.requestPointerLock = app.renderer.domElement.requestPointerLock ||
+                 app.renderer.domElement.mozRequestPointerLock ||
+                 app.renderer.domElement.webkitRequestPointerLock;
 
+    app.exitPointerLock = document.exitPointerLock ||
+                document.mozExitPointerLock ||
+                document.webkitExitPointerLock;
 
-	var geometry = new THREE.CubeGeometry(1,1,1);
-	var material = new THREE.MeshBasicMaterial({color: 0x00ff00});
-	app.cube = new THREE.Mesh(geometry, material);
-	
-	app.scene.add(app.cube);
+    app.renderer.domElement.onclick = app.requestPointerLock;
 
-	app.camera.position.z = 5;
+    app.keyboard = new THREEx.KeyboardState();
 
-	app.render();
+    app.camera = new Camera();
+    app.cube = new Cube();
+
+    app.scene.add(app.cube.cube);
+
+    app.camera.camera.position.z = 5;
+
+    app.render();
 };
 
+app.animate = function(){
+    requestAnimationFrame( app.animate );
+    app.render();
+    app.update();
+}
 
-app.render = function(){
-	requestAnimationFrame(app.render);
+app.update = function(){
+    if( app.keyboard.pressed("a") ){
+        app.cube.rotateLeft();
+    }
+    if( app.keyboard.pressed("d") ){
+        app.cube.rotateRight();
+    }
+    if( app.keyboard.pressed("w") ){
+        app.cube.rotateUp();
+    }
+    if( app.keyboard.pressed("s") ){
+        app.cube.rotateDown();
+    }
 
-	app.cube.rotation.x += 0.1;
-	app.cube.rotation.y += 0.1;
+    if( app.keyboard.pressed("left") ){
+        app.camera.moveLeft();
+    }
+    if( app.keyboard.pressed("right") ){
+        app.camera.moveRight();
+    }
+    if( app.keyboard.pressed("up") ){
+        app.camera.moveUp();
+    }
+    if( app.keyboard.pressed("down") ){
+        app.camera.moveDown();
+    }
+}
 
-	app.renderer.render(app.scene, app.camera);
+app.render = function() {
+    app.renderer.render(app.scene, app.camera.camera);
 }
 
 
-window.onload=function(){
-	app.init();
+
+window.onload = function(){
+    app.init();
+    app.animate();
 };
 
