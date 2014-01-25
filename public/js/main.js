@@ -1,5 +1,85 @@
 var app = {}
 
+app.isconnect = false;
+
+app.initsocket = function(){
+
+    app.socket = io.connect('192.168.1.28');
+
+    app.socket.on('connect', function(){
+
+        if(!app.isconnect){
+            app.isconnect = true;
+
+            var timestamp = Math.round(+new Date()/1000);
+            var code = timestamp.toString(36).toUpperCase();
+            app.code = code;
+
+            app.socket.emit('addplayer', code);
+
+        }
+
+    });
+
+    app.socket.on('log', function(logdata){
+        console.log('IO: ' + logdata);
+    });
+
+    app.socket.on('listplayers', function(listplayers){
+        app.create_players(listplayers);
+    });
+
+    app.socket.on('playerupdate', function(player){
+        app.updateplayer(player);
+    });
+
+
+}
+
+app.pushmetoserver = function(){
+    app.socket.emit('meupdate', app.code, app.me);
+}
+
+app.players = {};
+app.me = {};
+
+app.def_geometry = new THREE.CubeGeometry(1,1,1);
+app.def_material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+
+app.create_players = function(listplayers){
+
+    for(var i in listplayers){
+
+        if(listplayers[i].code != app.code){
+            app.players[listplayers[i].code] = listplayers[i];
+            app.players[listplayers[i].code].element = new THREE.Mesh(app.def_geometry, app.def_material);
+
+            app.scene.add(app.players[listplayers[i].code].element);    
+        }        
+        
+    };
+
+}
+
+app.updateplayer = function(player){
+
+    if(app.players[player.code] != undefined){
+
+        
+        if(player.position != undefined){
+
+            app.players[player.code].position = player.position;
+
+            app.players[player.code].element.position.x = player.position.x;
+            app.players[player.code].element.position.y = player.position.y;
+            app.players[player.code].element.position.z = player.position.z;
+
+        }
+
+    }
+
+}
+
 app.init = function(){
 
     app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 1000);
@@ -66,10 +146,14 @@ app.init = function(){
         app.scene.add(cube);
     }
 
-//     app.camera.position.z = 5;
 
-    app.camera.position.y = -10;
-    app.camera.position.z = 5;
+    //app.camera.position.y = -10;
+    //app.camera.position.z = 5;
+    //app.camera.position.x = -10;
+
+    app.render();
+
+    app.initsocket();
 
 };
 
@@ -84,6 +168,10 @@ app.update = function(){
     app.controls.isOnObject( true );
     app.controls.update( Date.now() - app.time);
     app.time = Date.now();
+
+    app.me.position = app.camera.position;
+
+    app.pushmetoserver();
 
 }
 
