@@ -114,7 +114,7 @@ MainPlayer.prototype.animate = function(mesh){
     }
 
     for (var i = mesh.geometry.animations.length - 1; i >= 0; i--) {
-        THREE.AnimationHandler.add(mesh.geometry.animations[i]);        
+        THREE.AnimationHandler.add(mesh.geometry.animations[i]);
     };
 
     //THREE.AnimationHandler.add(mesh.geometry.animations);
@@ -138,12 +138,14 @@ MainPlayer.prototype.changelife = function (){
 
     var self = this;
 
-    if(this.die){
-        this.die = false;
+    if(self.die){
+        self.die = false;
+        self.player_object.rotation.z = 0;
         self.controls.change_invert(false);
     }
     else {
-        this.die = true;
+        self.die = true;
+        self.player_object.rotation.z = Math.PI;
         self.controls.change_invert(true);
     }
 }
@@ -153,9 +155,9 @@ MainPlayer.prototype.update = function ( data ){
     var self = this;
 
     //console.log(self);
-  
+
     if ( self.loaded ){
-         
+
         // XXX: This is used for 'Gravity'
         self.controls.isOnObject( false );
 
@@ -163,20 +165,20 @@ MainPlayer.prototype.update = function ( data ){
 
         if(self.die){
             this.ray_b.ray.direction.set( 0, 1, 0 );
-            self.ray_b.ray.origin.y += 20;
+            self.ray_b.ray.origin.y += 10;
         }
         else {
             this.ray_b.ray.direction.set( 0, -1, 0 );
             self.ray_b.ray.origin.y -= 10;
         }
 
-        
+
 
         var intersections = self.ray_b.intersectObjects( [app.scene_base] );
 
         if ( intersections.length > 0 ) {
             var distance = intersections[ 0 ].distance;
-            
+
             if ( distance > 0 && distance < 10 ) {
                 self.controls.isOnObject( true );
             }
