@@ -78,6 +78,9 @@ function MainPlayer ( data, model_manager ) {
     this.controls.getObject().add(this.player_object);
 
     this.time = Date.now();
+
+    this.ray_b = new THREE.Raycaster();
+    this.ray_b.ray.direction.set( 0, -1, 0 );
 }
 
 MainPlayer.prototype = new Player( );
@@ -134,12 +137,22 @@ MainPlayer.prototype.update = function ( data ){
 
     //console.log(self);
   
-
     if ( self.loaded ){
          
         // XXX: This is used for 'Gravity'
-        self.controls.isOnObject( true );
+        self.controls.isOnObject( false );
 
+        self.ray_b.ray.origin.copy( self.controls.getObject().position );
+        self.ray_b.ray.origin.y -= 10;
+
+        var intersections = self.ray_b.intersectObjects( [app.scene_base] );
+
+        if ( intersections.length > 0 ) {
+            var distance = intersections[ 0 ].distance;
+            if ( distance > 0 && distance < 10 ) {
+                self.controls.isOnObject( true );
+            }
+        }
         self.controls.update( Date.now() - self.time);
         self.time = Date.now();
 
