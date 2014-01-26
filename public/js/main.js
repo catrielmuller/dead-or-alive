@@ -135,16 +135,21 @@ app.setup_mouse_lock = function (){
 
 app.add_ambient_light = function (){
 
-    app.scene.add( new THREE.AmbientLight( 0x111111 ) );
-
+ /*   app.ambientLight=new THREE.AmbientLight( 0x111111 ) 
+        app.ambientLight.castShadow = true;
+    app.scene.add(app.ambientLight);*/
     app.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8 );
 
-    app.directionalLight.position.x = 0;
+/*    app.directionalLight.position.x = 0;
     app.directionalLight.position.y = 25;
-    app.directionalLight.position.z = 25;
-
+    app.directionalLight.position.z = 25;*/
+    app.directionalLight.castShadow = true;
+    app.directionalLight.shadowCameraVisible = true; 
     app.directionalLight.position.normalize();
-
+    app.directionalLight.position.set(-450, 400, 500);
+    app.directionalLight.target.position.set(0, 0, 0);
+    app.directionalLight.distance =10000;
+    app.directionalLight.angle=0.5;
     app.scene.add( app.directionalLight );
 }
 
@@ -204,12 +209,59 @@ app.init = function(){
 /*
     app.scene.add( main_player.getObject() );*/
 
-    app.renderer = new THREE.WebGLRenderer({antialias:true});
-    app.renderer.autoClear = false;
-    app.renderer.setClearColorHex( 0xffffff, 1 );
+    app.renderer = new THREE.WebGLRenderer({antialias:true,});
+    app.renderer.autoClear = true;
+    app.renderer.setClearColor(0x00A9E7, 1);
+    app.renderer.shadowMapEnabled = true;
+    app.renderer.shadowMapSoft = true;
+    
+    app.renderer.shadowCameraNear = 3;
+    app.renderer.shadowCameraFar = app.camera.far;
+    app.renderer.shadowCameraFov = 50;
+    
+    app.renderer.shadowMapBias = 0.0039;
+    app.renderer.shadowMapDarkness = 0.5;
+    app.renderer.shadowMapWidth = 2048;
+    app.renderer.shadowMapHeight = 2048;
     app.renderer.setSize(window.innerWidth, window.innerHeight);
+    
     document.body.appendChild(app.renderer.domElement);
 
+    app.renderer.autoClear = false;
+
+    renderTargetParameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat, stencilBuffer: false };
+    renderTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, renderTargetParameters );
+
+    effectBloom = new THREE.BloomPass( 0.6 );
+    var effectBleach = new THREE.ShaderPass( THREE.BleachBypassShader );
+
+    hblur = new THREE.ShaderPass( THREE.HorizontalTiltShiftShader );
+    vblur = new THREE.ShaderPass( THREE.VerticalTiltShiftShader );
+
+    var bluriness = 3;
+
+    hblur.uniforms[ 'h' ].value = bluriness / window.innerWidth;
+    vblur.uniforms[ 'v' ].value = bluriness /window.innerHeight;
+
+    hblur.uniforms[ 'r' ].value = vblur.uniforms[ 'r' ].value = 0.5;
+
+    effectBleach.uniforms[ 'opacity' ].value = 0.65;
+
+    composer = new THREE.EffectComposer( app.renderer, renderTarget );
+
+    var renderModel = new THREE.RenderPass( app.scene, app.camera );
+
+    vblur.renderToScreen = true;
+	composer = new THREE.EffectComposer( app.renderer, renderTarget );
+
+	composer.addPass( renderModel );
+
+	composer.addPass( effectBloom );
+				//composer.addPass( effectBleach );
+
+	composer.addPass( hblur );
+	composer.addPass( vblur );
+    
     app.stats = new Stats();
     app.stats.domElement.style.position = 'absolute';
     app.stats.domElement.style.top = '0px';
@@ -219,7 +271,6 @@ app.init = function(){
     app.add_ambient_light();
 //     app.add_floor();
 
-
     var loader = new THREE.JSONLoader();
     loader.load( '/scenes/base.js', function ( geometry, materials ) {
 
@@ -227,11 +278,12 @@ app.init = function(){
         app.scene_base.scale.x = app.scene_base.scale.y = app.scene_base.scale.z = 7;
         app.scene_base.position.y = 0;
         app.scene_base.position.x = -150;
+        app.scene_base.castShadow=true;
+        app.scene_base.receiveShadow=true;
         app.scene.add( app.scene_base  );
 
 
     });
-
     app.initsocket();
 };
 
@@ -255,7 +307,8 @@ app.update = function(){
 }
 
 app.render = function() {
-    app.renderer.render(app.scene, app.camera);
+    //app.renderer.render(app.scene, app.camera);
+    composer.render( 0.1 );
 }
 
 
