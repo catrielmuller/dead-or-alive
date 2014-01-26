@@ -8,6 +8,8 @@ THREE.PointerLockControls = function ( camera ) {
 
 	camera.rotation.set( 0, 0, 0 );
 
+	scope.camera = camera;
+
 	var pitchObject = new THREE.Object3D();
 	pitchObject.add( camera );
 
@@ -28,6 +30,7 @@ THREE.PointerLockControls = function ( camera ) {
 	var PI_2 = Math.PI / 2;
 
 	var onMouseMove = function ( event ) {
+
         //console.log("Enabled: ", scope.enabled);
 
 		if ( scope.enabled === false ) return;
@@ -35,9 +38,16 @@ THREE.PointerLockControls = function ( camera ) {
 		var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
 		var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-		yawObject.rotation.y -= movementX * 0.002;
-		pitchObject.rotation.x -= movementY * 0.002;
+		if(app.players[app.main_player].die){
+			yawObject.rotation.y -= movementX * 0.002;
+			pitchObject.rotation.x += movementY * 0.002;
+		}
+		else {
+			yawObject.rotation.y -= movementX * 0.002;
+			pitchObject.rotation.x -= movementY * 0.002;
+		}
 
+		
 		pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
 
 	};
@@ -140,6 +150,23 @@ THREE.PointerLockControls = function ( camera ) {
 
 	}();
 
+	this.inverted = false;
+	this.change_invert = function(val){
+
+		self = this;
+		this.inverted = val;
+
+		if(val){
+			self.camera.rotation.z = Math.PI;
+			yawObject.position.y += 20;
+		}
+		else {
+			self.camera.rotation.z = 0;
+			yawObject.position.y += 20;	
+		}	
+
+	}
+
 	this.update = function ( delta ) {
 
 		if ( scope.enabled === false ) return;
@@ -149,32 +176,56 @@ THREE.PointerLockControls = function ( camera ) {
 		velocity.x += ( - velocity.x ) * 0.08 * delta;
 		velocity.z += ( - velocity.z ) * 0.08 * delta;
 
-		velocity.y -= 0.25 * delta;
+		if(this.inverted){
+			velocity.y += 0.25 * delta;
+		}
+		else {
+			velocity.y -= 0.25 * delta;
+		}		
 
-		if ( moveForward ) velocity.z -= 0.12 * delta;
-		if ( moveBackward ) velocity.z += 0.12 * delta;
+		if(this.inverted){
+			if ( moveForward ) velocity.z -= 0.12 * delta;
+			if ( moveBackward ) velocity.z += 0.12 * delta;
 
-		if ( moveLeft ) velocity.x -= 0.12 * delta;
-		if ( moveRight ) velocity.x += 0.12 * delta;
+			if ( moveLeft ) velocity.x += 0.12 * delta;
+			if ( moveRight ) velocity.x -= 0.12 * delta;
+		}
+		else {
+
+			if ( moveForward ) velocity.z -= 0.12 * delta;
+			if ( moveBackward ) velocity.z += 0.12 * delta;
+
+			if ( moveLeft ) velocity.x -= 0.12 * delta;
+			if ( moveRight ) velocity.x += 0.12 * delta;
+		}
+
+		
 
 		if ( isOnObject === true ) {
-
 			velocity.y = Math.max( 0, velocity.y );
-
 		}
 
 		yawObject.translateX( velocity.x );
 		yawObject.translateY( velocity.y );
 		yawObject.translateZ( velocity.z );
 
-		if ( yawObject.position.y < 10 ) {
 
-			velocity.y = 0;
-			yawObject.position.y = 10;
-
-			canJump = true;
-
+		if(this.inverted){
+			if ( yawObject.position.y > 470 ) {
+				velocity.y = 0;
+				yawObject.position.y = 470;
+				canJump = true;
+			}
 		}
+		else {
+			if ( yawObject.position.y < 10 ) {
+				velocity.y = 0;
+				yawObject.position.y = 10;
+				canJump = true;
+			}
+		}
+
+		
 
 	};
 

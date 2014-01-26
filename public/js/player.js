@@ -79,6 +79,8 @@ function MainPlayer ( data, model_manager ) {
 
     this.time = Date.now();
 
+    this.die = false;
+
     this.ray_b = new THREE.Raycaster();
     this.ray_b.ray.direction.set( 0, -1, 0 );
 }
@@ -98,7 +100,7 @@ MainPlayer.prototype.load_mesh = function ( ){
     app.scene.add( self.controls.getObject() );
     self.loaded = true;
 
-    self.animate(self.mesh);
+    //self.animate(self.mesh);
 }
 
 MainPlayer.prototype.animate = function(mesh){
@@ -132,6 +134,21 @@ MainPlayer.prototype.disable_controls = function ( ){
     self.controls.enabled = false;
 }
 
+MainPlayer.prototype.changelife = function (){
+
+    var self = this;
+
+    if(this.die){
+        this.die = false;
+        self.controls.change_invert(false);
+    }
+    else {
+        this.die = true;
+        self.controls.change_invert(true);
+    }
+}
+
+
 MainPlayer.prototype.update = function ( data ){
     var self = this;
 
@@ -143,12 +160,23 @@ MainPlayer.prototype.update = function ( data ){
         self.controls.isOnObject( false );
 
         self.ray_b.ray.origin.copy( self.controls.getObject().position );
-        self.ray_b.ray.origin.y -= 10;
+
+        if(self.die){
+            this.ray_b.ray.direction.set( 0, 1, 0 );
+            self.ray_b.ray.origin.y += 20;
+        }
+        else {
+            this.ray_b.ray.direction.set( 0, -1, 0 );
+            self.ray_b.ray.origin.y -= 10;
+        }
+
+        
 
         var intersections = self.ray_b.intersectObjects( [app.scene_base] );
 
         if ( intersections.length > 0 ) {
             var distance = intersections[ 0 ].distance;
+            
             if ( distance > 0 && distance < 10 ) {
                 self.controls.isOnObject( true );
             }
@@ -157,7 +185,7 @@ MainPlayer.prototype.update = function ( data ){
         self.time = Date.now();
 
         var delta = app.clock.getDelta();
-        self.animation.update( delta );
+        //self.animation.update( delta );
     }
     else{
         console.log("NOT LOADED YET");
