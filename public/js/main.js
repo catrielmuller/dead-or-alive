@@ -5,6 +5,8 @@ function get(name){
       return decodeURIComponent(name[1]);
 }
 
+
+
 app.isconnect = false;
 
 app.initsocket = function(){
@@ -178,8 +180,8 @@ app.init = function(){
     app.scene.add( app.controls.getObject() );
 
     app.renderer = new THREE.WebGLRenderer({antialias:true});
-    app.renderer.autoClear = false;
-    app.renderer.setClearColorHex( 0xffffff, 1 );
+    app.renderer.autoClear = true;
+    app.renderer.setClearColor(0xffffff, 1);
     app.renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(app.renderer.domElement);
 
@@ -225,6 +227,20 @@ app.init = function(){
         }, false );
 
     }
+
+    var loader = new THREE.JSONLoader();
+    loader.load( '/scenes/base.js', function ( geometry, materials ) {
+
+        app.scene_base =  new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+        app.scene_base.scale.x = app.scene_base.scale.y = app.scene_base.scale.z = 7;
+        app.scene_base.position.y = 0;
+        app.scene_base.position.x = -150;
+        app.scene.add( app.scene_base  );
+
+
+    });
+
+
 /*
     var geometry = new THREE.CubeGeometry(20,20,20);
     var material = new THREE.MeshBasicMaterial({color: 0x00ff00});*/
@@ -316,7 +332,7 @@ app.init = function(){
     material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
 
     mesh = new THREE.Mesh( geometry, material );
-    app.scene.add( mesh );
+    //app.scene.add( mesh );
 
     app.initsocket();
 
@@ -341,6 +357,7 @@ app.update = function(){
 
     app.pushmetoserver();
 
+    app.stats.update();
 }
 
 app.render = function() {
