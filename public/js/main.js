@@ -12,7 +12,7 @@ app.isconnect = false;
 app.initsocket = function(){
     var server = get('server');
     if ( server === undefined ){
-        server = 'localhost';
+        server = window.location.hostname;
     }
 
     app.socket = io.connect(server);
