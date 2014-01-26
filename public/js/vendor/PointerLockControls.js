@@ -221,7 +221,6 @@ THREE.PointerLockControls = function ( camera ) {
 		yawObject.translateY( velocity.y );
 		yawObject.translateZ( velocity.z );
 
-
 		if(self.inverted){
 			if ( yawObject.position.y > 480 ) {
 				velocity.y = 0;

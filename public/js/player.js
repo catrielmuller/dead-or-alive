@@ -62,6 +62,7 @@ Player.prototype.remove = function ( ){
 
 
 function MainPlayer ( data, model_manager ) {
+    var self = this;
     var timestamp = Math.round(+new Date()/100);
     this.hash = timestamp.toString(36).toUpperCase();
     this.name = data['name'];
@@ -84,6 +85,10 @@ function MainPlayer ( data, model_manager ) {
 
     this.ray_b = new THREE.Raycaster();
     this.ray_b.ray.direction.set( 0, -1, 0 );
+
+    document.addEventListener( 'click', function (){
+        self.fire();
+    }, false );
 }
 
 MainPlayer.prototype = new Player( );
@@ -209,4 +214,12 @@ MainPlayer.prototype.data_to_server = function ( ){
             'name': self.name,
             'model': self.model}
 
+}
+
+MainPlayer.prototype.fire = function ( ){
+    var self = this;
+    if (document.pointerLockElement || document.mozPointerLockElement || document.webkitPointerLockElement ) {
+        // Pointer was is locked, fire
+        var bullet = new Bullet(self.controls.getObject(), self.model_manager);
+    }
 }

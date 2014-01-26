@@ -194,6 +194,8 @@ app.init = function(){
     app.players_models = new ModelsManager();
 
     app.players = {};
+    app.bullets = {};
+
     var name = get('name');
     if ( name === undefined ){
         name = 'John Doe';
@@ -309,6 +311,11 @@ app.update = function(){
     for(var i in app.players){
         app.players[i].update();
     }
+
+    for(var i in app.bullets){
+        app.bullets[i].update();
+    }
+
 
     app.stats.update();
 }
