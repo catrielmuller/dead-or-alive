@@ -185,6 +185,8 @@ app.add_floor = function (){
 
 app.init = function(){
 
+    app.clock = new THREE.Clock();
+
     app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.01, 1000);
 
 	app.scene = new THREE.Scene();
@@ -206,6 +208,7 @@ app.init = function(){
 
     app.main_player = main_player.hash;
     app.players[app.main_player] = main_player;
+
 /*
     app.scene.add( main_player.getObject() );*/
 

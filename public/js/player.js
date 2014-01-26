@@ -87,11 +87,35 @@ MainPlayer.prototype.load_mesh = function ( ){
     var self = this;
     var geometry = self.model_manager.get_geometry( self.model );
     var materials = self.model_manager.get_materials( self.model );
-    self.mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
-    self.player_object.add( self.mesh )
+
+    self.mesh = new THREE.SkinnedMesh( geometry, new THREE.MeshFaceMaterial( materials ), false );
+    self.mesh.rotation.y = Math.PI;
+    self.player_object.add( self.mesh );
 
     app.scene.add( self.controls.getObject() );
     self.loaded = true;
+
+    self.animate(self.mesh);
+}
+
+MainPlayer.prototype.animate = function(mesh){
+
+    var self = this;
+
+    var materials = mesh.material.materials;
+
+    for (var k in materials) {
+        materials[k].skinning = true;
+    }
+
+    for (var i = mesh.geometry.animations.length - 1; i >= 0; i--) {
+        THREE.AnimationHandler.add(mesh.geometry.animations[i]);        
+    };
+
+    //THREE.AnimationHandler.add(mesh.geometry.animations);
+    self.animation = new THREE.Animation(mesh, "Corre", THREE.AnimationHandler.CATMULLROM);
+    self.animation.play();
+
 }
 
 MainPlayer.prototype.enable_controls = function ( ){
@@ -108,12 +132,19 @@ MainPlayer.prototype.disable_controls = function ( ){
 MainPlayer.prototype.update = function ( data ){
     var self = this;
 
+    //console.log(self);
+  
+
     if ( self.loaded ){
+         
         // XXX: This is used for 'Gravity'
         self.controls.isOnObject( true );
 
         self.controls.update( Date.now() - self.time);
         self.time = Date.now();
+
+        var delta = app.clock.getDelta();
+        self.animation.update( delta );
     }
     else{
         console.log("NOT LOADED YET");
