@@ -39,33 +39,32 @@ var players_data = {};
 io.sockets.on('connection', function (socket) {
 
 
-    socket.on('addplayer', function(player){
-        socket.player = player.code;
+    socket.on('addplayer', function(player_hash, player_data){
 
-        players[player.code] = socket;
-        players_data[player.code] = player;
+        players[player_hash] = socket;
+        players_data[player_hash] = player_data;
 
         socket.emit('listplayers', players_data);
 
-        socket.broadcast.emit('playernew', player);
+        socket.broadcast.emit('playernew', players_data[player_hash]);
 
         socket.emit('log', 'Server Connected');
 
     });
 
-    socket.on('meupdate', function(code, data){
+    socket.on('meupdate', function(player_hash, data){
 
-        if(players_data[code] != undefined){
+        if(players[player_hash] != undefined){
 
-            data.code = code;
-            players_data[code] = data;
+            players_data[player_hash] = data;
 
-            socket.broadcast.emit('playerupdate', players_data[code]);
+            socket.broadcast.emit('playerupdate', players_data[player_hash]);
             //socket.emit('log', 'Updated Player');
 
-
         }
-
+        else {
+            socket.emit('log', 'Tried to update an invalid player', player_hash);
+        }
 
     });
 
@@ -73,16 +72,12 @@ io.sockets.on('connection', function (socket) {
 
         for(var i in players){
             if (players[i].id == socket.id){
-
-                var code = players_data[i].code;
-                socket.broadcast.emit('playerdelete', code);
+                var hash = i;
+                socket.broadcast.emit('playerdelete', hash);
                 delete players[i];
                 delete players_data[i];
             }
         }
 
-        //console.log(socket);
-
-        //socket.broadcast.emit('input', 'keypadon');
     });
 });

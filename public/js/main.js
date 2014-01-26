@@ -8,21 +8,20 @@ function get(name){
 app.isconnect = false;
 
 app.initsocket = function(){
+    var server = get('server');
+    if ( server === undefined ){
+        server = 'localhost';
+    }
 
-    app.socket = io.connect('localhost');
+    app.socket = io.connect(server);
 
     app.socket.on('connect', function(){
 
         if(!app.isconnect){
             app.isconnect = true;
-
-            var timestamp = Math.round(+new Date()/1000);
-            var code = timestamp.toString(36).toUpperCase();
-            app.me.code = code;
-
-            console.log('Code: ' + app.me.code);
-
-            app.socket.emit('addplayer', app.me);
+            var main_player = app.players[app.main_player];
+            console.log('Code: ' + main_player.hash);
+            app.socket.emit('addplayer', main_player.hash, main_player.data_to_server());
 
         }
 
@@ -40,7 +39,6 @@ app.initsocket = function(){
         app.new_player(player);
     });
 
-
     app.socket.on('playerupdate', function(player){
         app.updateplayer(player);
     });
@@ -49,36 +47,21 @@ app.initsocket = function(){
         app.remove_player(playercode);
     });
 
-
-
-
 }
 
 app.pushmetoserver = function(){
-    app.socket.emit('meupdate', app.me.code, app.me);
+    var main_player = app.players[app.main_player];
+    app.socket.emit('meupdate', main_player.hash, main_player.data_to_server());
 }
-
-app.players = {};
-app.me = {};
-
-var model = get('model');
-
-if ( model !== undefined ){
-    app.me.model = model;
-}
-else{
-    app.me.model = 'pj';
-}
-
-app.def_geometry = new THREE.CubeGeometry(1,1,1);
-app.def_material = new THREE.MeshBasicMaterial({color: 0x00ff00});
 
 app.create_players = function(listplayers){
 
     for(var i in listplayers){
 
-        var player = listplayers[i];
-        app.new_player(player);
+        var data = listplayers[i];
+        if ( data['hash'] != app.main_player ){
+            app.new_player(data);
+        }
 
     };
 }
@@ -86,109 +69,36 @@ app.create_players = function(listplayers){
 app.remove_player = function(playercode){
 
     if(app.players[playercode] != undefined){
-        app.scene.remove(app.players[playercode].element);
+        app.players[playercode].remove();
         delete app.players[playercode];
 
     }
 
 }
 
-app.new_player = function(player){
+app.new_player = function(data){
 
-    console.log(player);
-    function loadMesh( geometry, materials ){
-        app.players[player.code] = player;
-        var mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
-/*
-        mesh.scale.x = mesh.scale.y = mesh.scale.z = 2;
-        mesh.position.x = -30;*/
-        app.scene.add( mesh );
+    console.log(data);
+    var new_player = new Player( data, app.players_models );
 
-        app.players[player.code].element = mesh;
-    }
+    app.players[new_player['hash']] = new_player ;
+    app.scene.add( new_player.getObject() );
 
-    if(player.code != app.me.code){
-        if ( ! (player.model in app.models) ){
+}
 
-            var loader = new THREE.JSONLoader();
-            loader.load( '/models/'+player.model+'.js', function ( geometry, materials ) {
+app.updateplayer = function(data){
 
-                //app.shader = ShaderExtras["hatching"];
-        //         app.shader = THREE.ShaderLib["lambert"];
-        //         var u = THREE.UniformsUtils.clone(app.shader.uniforms);
-        //         var vs = app.shader.vertexShader;
-        //         var fs = app.shader.fragmentShader;
-        //
-        //         var smaterial = new THREE.ShaderMaterial({ uniforms: u, vertex_shader: vs,  fragment_shader: fs , });
+    if(app.players[data.hash] != undefined){
 
-                //smaterial.uniforms.uDirLightPos.value = app.directionalLight.position;
-                //smaterial.uniforms.uDirLightColor.value = app.directionalLight.color;
-        //         smaterial.wireframe = true;
+        var player = app.players[data.hash]
 
-        //         console.log(smaterial);
-
-        //         morph = new THREE.Mesh( geometry, smaterial );
-
-                app.models[player.model] = {'geometry': geometry, 'materials': materials};
-                var mesh = loadMesh( geometry, materials );
-
-            });
-        }
-        else{
-            var model = app.models[player.model];
-            loadMesh( model['geometry'], model['materials'] );
-        }
-
+        player.update_position( data.position );
+        player.update_rotation( data.rotation );
     }
 
 }
 
-app.updateplayer = function(player){
-
-    if(app.players[player.code] != undefined){
-
-
-        if(player.position != undefined){
-
-            app.players[player.code].position = player.position;
-            app.players[player.code].rotation = player.rotation;
-
-            app.players[player.code].element.position.x = player.position.x;
-            app.players[player.code].element.position.y = player.position.y;
-            app.players[player.code].element.position.z = player.position.z;
-
-            app.players[player.code].element.rotation.x = player.rotation.x;
-            app.players[player.code].element.rotation.y = player.rotation.y;
-            app.players[player.code].element.rotation.z = player.rotation.z;
-            //console.log('UP!')
-
-        }
-
-    }
-
-}
-
-app.init = function(){
-
-    app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-
-	app.scene = new THREE.Scene();
-
-    app.controls = new THREE.PointerLockControls( app.camera );
-    app.scene.add( app.controls.getObject() );
-
-    app.renderer = new THREE.WebGLRenderer({antialias:true});
-    app.renderer.autoClear = false;
-    app.renderer.setClearColorHex( 0xffffff, 1 );
-    app.renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(app.renderer.domElement);
-
-    app.stats = new Stats();
-    app.stats.domElement.style.position = 'absolute';
-    app.stats.domElement.style.top = '0px';
-    document.body.appendChild( app.stats.domElement );
-
-    app.time = Date.now();
+app.setup_mouse_lock = function (){
 
     var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
 
@@ -198,14 +108,9 @@ app.init = function(){
 
         var pointerlockchange = function ( event ) {
             if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
-
-                app.controls.enabled = true;
-
-
+                app.players[app.main_player].enable_controls();
             } else {
-
-                app.controls.enabled = false;
-
+                app.players[app.main_player].disable_controls();
             }
 
         }
@@ -225,27 +130,9 @@ app.init = function(){
         }, false );
 
     }
-/*
-    var geometry = new THREE.CubeGeometry(20,20,20);
-    var material = new THREE.MeshBasicMaterial({color: 0x00ff00});*/
+}
 
-    //app.cubes = []
-
-    /*
-
-    for ( var i = 0; i < 10; i ++ ) {
-        var cube = new THREE.Mesh(geometry, material);
-        cube.position.x = i*40;
-        cube.position.y = 0;
-        cube.position.z = 0;
-
-        app.cubes.push(cube);
-        app.scene.add(cube);
-    }
-
-    */
-
-    /*TEST */
+app.add_ambient_light = function (){
 
     app.scene.add( new THREE.AmbientLight( 0x111111 ) );
 
@@ -258,39 +145,9 @@ app.init = function(){
     app.directionalLight.position.normalize();
 
     app.scene.add( app.directionalLight );
+}
 
-    app.models = {};
-/*
-    var loader = new THREE.JSONLoader();
-    loader.load( '/models/pj.js', function ( geometry, materials ) {
-
-        //app.shader = ShaderTest["hatching"];
-        //app.shader = THREE.ShaderLib["lambert"];
-        //app.shader_u = THREE.UniformsUtils.clone(app.shader.uniforms);
-        //app.shader_vs = app.shader.vertex_shader;
-        //app.shader_fs = app.shader.fragment_shader;
-
-        //var smaterial = new THREE.ShaderMaterial({ uniforms: app.shader_u, vertexShader: app.shader_vs,  fragmentShader: app.shader_fs});
-
-        //smaterial.uniforms.uDirLightPos.value = app.directionalLight.position;
-        //smaterial.uniforms.uDirLightColor.value = app.directionalLight.color;
-
-        //var morph = new THREE.Mesh( geometry, smaterial );
-
-        var morph = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
-        morph.position.set( 0, 0, 0 );
-        morph.scale.x = morph.scale.y = morph.scale.z = 2;
-
-//         app.scene.add( morph );
-
-    });*/
-/*
-    app.camera.position.y = -10;
-    app.camera.position.z = 30;
-    app.camera.position.x = 0;*/
-/*
-    app.render();*/
-// floor
+app.add_floor = function (){
 
     geometry = new THREE.PlaneGeometry( 2000, 2000, 100, 100 );
     geometry.applyMatrix( new THREE.Matrix4().makeRotationX( - Math.PI / 2 ) );
@@ -317,9 +174,49 @@ app.init = function(){
 
     mesh = new THREE.Mesh( geometry, material );
     app.scene.add( mesh );
+}
 
+app.init = function(){
+
+    app.camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.01, 1000);
+
+	app.scene = new THREE.Scene();
+
+    app.players_models = new ModelsManager();
+
+    app.players = {};
+    var name = get('name');
+    if ( name === undefined ){
+        name = 'John Doe';
+    }
+
+    var model = get('model');
+    if ( model === undefined ){
+        model = 'pj';
+    }
+
+    var main_player = new MainPlayer( {'name': name, 'model': model}, app.players_models );
+
+    app.main_player = main_player.hash;
+    app.players[app.main_player] = main_player;
+/*
+    app.scene.add( main_player.getObject() );*/
+
+    app.renderer = new THREE.WebGLRenderer({antialias:true});
+    app.renderer.autoClear = false;
+    app.renderer.setClearColorHex( 0xffffff, 1 );
+    app.renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(app.renderer.domElement);
+
+    app.stats = new Stats();
+    app.stats.domElement.style.position = 'absolute';
+    app.stats.domElement.style.top = '0px';
+    document.body.appendChild( app.stats.domElement );
+
+    app.setup_mouse_lock();
+    app.add_ambient_light();
+    app.add_floor();
     app.initsocket();
-
 };
 
 app.animate = function(){
@@ -330,16 +227,13 @@ app.animate = function(){
 
 
 app.update = function(){
-    app.controls.isOnObject( true );
-    app.controls.update( Date.now() - app.time);
-    app.time = Date.now();
 
-    app.me.position = app.controls.getObject().position;
-    app.me.rotation = {'x': app.controls.getObject().rotation.x,
-                       'y': app.controls.getObject().rotation.y,
-                       'z': app.controls.getObject().rotation.z};
-
+    // XXX: Do not send on *EVERY* frame
     app.pushmetoserver();
+
+    for(var i in app.players){
+        app.players[i].update();
+    }
 
 }
 
