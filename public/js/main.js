@@ -135,9 +135,9 @@ app.setup_mouse_lock = function (){
 
 app.add_ambient_light = function (){
 
- /*   app.ambientLight=new THREE.AmbientLight( 0x111111 ) 
+    app.ambientLight=new THREE.AmbientLight( 0x111111 ) 
         app.ambientLight.castShadow = true;
-    app.scene.add(app.ambientLight);*/
+    app.scene.add(app.ambientLight);
     app.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8 );
 
 /*    app.directionalLight.position.x = 0;
@@ -214,7 +214,7 @@ app.init = function(){
 
     app.renderer = new THREE.WebGLRenderer({antialias:true,});
     app.renderer.autoClear = true;
-    app.renderer.setClearColor(0x00A9E7, 1);
+    app.renderer.setClearColor(0x008ac4, 1);
     app.renderer.shadowMapEnabled = true;
     app.renderer.shadowMapSoft = true;
     
@@ -235,13 +235,13 @@ app.init = function(){
     renderTargetParameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat, stencilBuffer: false };
     renderTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, renderTargetParameters );
 
-    effectBloom = new THREE.BloomPass( 0.6 );
+    effectBloom = new THREE.BloomPass( 0.75 );
     var effectBleach = new THREE.ShaderPass( THREE.BleachBypassShader );
 
     hblur = new THREE.ShaderPass( THREE.HorizontalTiltShiftShader );
     vblur = new THREE.ShaderPass( THREE.VerticalTiltShiftShader );
 
-    var bluriness = 3;
+    var bluriness = 0;
 
     hblur.uniforms[ 'h' ].value = bluriness / window.innerWidth;
     vblur.uniforms[ 'v' ].value = bluriness /window.innerHeight;
