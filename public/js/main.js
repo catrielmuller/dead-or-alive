@@ -137,14 +137,13 @@ app.add_ambient_light = function (){
 
     app.ambientLight=new THREE.AmbientLight( 0x111111 ) 
         app.ambientLight.castShadow = true;
-    app.scene.add(app.ambientLight);
+  /*  app.scene.add(app.ambientLight);*/
     app.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8 );
 
 /*    app.directionalLight.position.x = 0;
     app.directionalLight.position.y = 25;
     app.directionalLight.position.z = 25;*/
     app.directionalLight.castShadow = true;
-    app.directionalLight.shadowCameraVisible = true; 
     app.directionalLight.position.normalize();
     app.directionalLight.position.set(-450, 400, 500);
     app.directionalLight.target.position.set(0, 0, 0);
