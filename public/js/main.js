@@ -135,7 +135,7 @@ app.setup_mouse_lock = function (){
 
 app.add_ambient_light = function (){
 
-    app.ambientLight=new THREE.AmbientLight( 0x111111 ) 
+    app.ambientLight=new THREE.AmbientLight( 0x111111 )
         app.ambientLight.castShadow = true;
   /*  app.scene.add(app.ambientLight);*/
     app.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8 );
@@ -183,6 +183,7 @@ app.add_floor = function (){
 }
 
 app.init = function(){
+    app.server_time = Math.round(new Date()/50);
 
     app.clock = new THREE.Clock();
 
@@ -216,17 +217,17 @@ app.init = function(){
     app.renderer.setClearColor(0x008ac4, 1);
     app.renderer.shadowMapEnabled = true;
     app.renderer.shadowMapSoft = true;
-    
+
     app.renderer.shadowCameraNear = 3;
     app.renderer.shadowCameraFar = app.camera.far;
     app.renderer.shadowCameraFov = 50;
-    
+
     app.renderer.shadowMapBias = 0.0039;
     app.renderer.shadowMapDarkness = 0.5;
     app.renderer.shadowMapWidth = 2048;
     app.renderer.shadowMapHeight = 2048;
     app.renderer.setSize(window.innerWidth, window.innerHeight);
-    
+
     document.body.appendChild(app.renderer.domElement);
 
     app.renderer.autoClear = false;
@@ -263,7 +264,7 @@ app.init = function(){
 
 	composer.addPass( hblur );
 	composer.addPass( vblur );
-    
+
     app.stats = new Stats();
     app.stats.domElement.style.position = 'absolute';
     app.stats.domElement.style.top = '0px';
@@ -299,7 +300,11 @@ app.animate = function(){
 app.update = function(){
 
     // XXX: Do not send on *EVERY* frame
-    app.pushmetoserver();
+    var server_time = Math.round(new Date()/50);
+    if (server_time != app.server_time){
+        app.pushmetoserver();
+        app.server_time = server_time;
+    }
 
     for(var i in app.players){
         app.players[i].update();
