@@ -5,6 +5,8 @@ function get(name){
       return decodeURIComponent(name[1]);
 }
 
+
+
 app.isconnect = false;
 
 app.initsocket = function(){
@@ -99,7 +101,6 @@ app.updateplayer = function(data){
 }
 
 app.setup_mouse_lock = function (){
-
     var havePointerLock = 'pointerLockElement' in document || 'mozPointerLockElement' in document || 'webkitPointerLockElement' in document;
 
     if ( havePointerLock ) {
@@ -173,6 +174,7 @@ app.add_floor = function (){
     material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors } );
 
     mesh = new THREE.Mesh( geometry, material );
+
     app.scene.add( mesh );
 }
 
@@ -215,7 +217,21 @@ app.init = function(){
 
     app.setup_mouse_lock();
     app.add_ambient_light();
-    app.add_floor();
+//     app.add_floor();
+
+
+    var loader = new THREE.JSONLoader();
+    loader.load( '/scenes/base.js', function ( geometry, materials ) {
+
+        app.scene_base =  new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+        app.scene_base.scale.x = app.scene_base.scale.y = app.scene_base.scale.z = 7;
+        app.scene_base.position.y = 0;
+        app.scene_base.position.x = -150;
+        app.scene.add( app.scene_base  );
+
+
+    });
+
     app.initsocket();
 };
 
@@ -235,6 +251,7 @@ app.update = function(){
         app.players[i].update();
     }
 
+    app.stats.update();
 }
 
 app.render = function() {
