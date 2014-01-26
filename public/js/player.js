@@ -23,6 +23,7 @@ Player.prototype.load_mesh = function ( ){
     var geometry = self.model_manager.get_geometry( self.model );
     var materials = self.model_manager.get_materials( self.model );
     self.mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+    self.mesh.rotation.y = Math.PI;
     self.player_object.add( self.mesh );
     app.scene.add( self.player_object );
     self.loaded = true;
